@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 
 const issues = [
   'Có ý tưởng nhưng lại im lặng khi mọi người nhìn về phía mình.',
@@ -38,12 +38,78 @@ const faqs = [
   ['Trường hợp nào không phù hợp?', 'Coaching không thay thế trị liệu tâm lý, hỗ trợ y tế hoặc một lớp kỹ thuật thuyết trình thuần túy.'],
 ] as const;
 
-export default function Home() {
-  const [submitted, setSubmitted] = useState(false);
+type PaymentState = {
+  orderCode: string;
+  amount: number;
+  qrUrl: string;
+  accountName: string;
+  bankCode: string;
+  accountNumber: string;
+};
 
-  function handleSubmit(event: { preventDefault: () => void }) {
+function formatVnd(amount: number) {
+  return `${new Intl.NumberFormat('vi-VN').format(amount)} VNĐ`;
+}
+
+export default function Home() {
+  const [payment, setPayment] = useState<PaymentState | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState('pending');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitted(true);
+    setIsSubmitting(true);
+    setFormError('');
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+
+    try {
+      const response = await fetch('/api/create-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.get('name'),
+          email: formData.get('email'),
+          situation: formData.get('situation'),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Không thể tạo thanh toán.');
+      setPayment(data as PaymentState);
+      setPaymentStatus('pending');
+      form.reset();
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Đã có lỗi xảy ra. Vui lòng thử lại.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!payment || paymentStatus === 'paid') return undefined;
+
+    const poll = window.setInterval(async () => {
+      try {
+        const response = await fetch(`/api/payment-status?orderCode=${encodeURIComponent(payment.orderCode)}`);
+        if (!response.ok) return;
+        const data = (await response.json()) as { status?: string };
+        if (data.status) setPaymentStatus(data.status);
+      } catch {
+        // The webhook remains the source of truth if status polling is interrupted.
+      }
+    }, 5000);
+
+    return () => window.clearInterval(poll);
+  }, [payment, paymentStatus]);
+
+  async function copyOrderCode() {
+    if (!payment) return;
+    await navigator.clipboard.writeText(payment.orderCode);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
   }
 
   return (
@@ -194,13 +260,38 @@ export default function Home() {
             <h2>Đặt lịch 30 phút để xem coaching có phù hợp với bạn không.</h2>
             <p>Bạn không cần chuẩn bị một câu chuyện hoàn hảo. Chỉ cần chia sẻ tình huống khiến bạn cảm thấy mình chưa thể hiện được điều muốn nói.</p>
           </div>
-          <form className="lead-form" onSubmit={handleSubmit}>
-            <label>Họ và tên<input name="name" required placeholder="Tên của bạn" /></label>
-            <label>Email<input name="email" type="email" required placeholder="you@example.com" /></label>
-            <label>Tình huống giao tiếp bạn muốn cải thiện<textarea name="situation" required placeholder="Ví dụ: trình bày một ý tưởng trong cuộc họp..." /></label>
-            <button className="form-button" type="submit">Đặt lịch 30 phút <span aria-hidden="true">↗</span></button>
-            {submitted && <output className="form-status">Bản demo đã nhận thông tin trên màn hình. Cần kết nối công cụ nhận lead trước khi chạy thật.</output>}
-          </form>
+          {payment ? (
+            <div className="payment-panel">
+              <p className="payment-kicker">Thông tin thanh toán</p>
+              <h3>Đăng ký đã được ghi nhận.</h3>
+              <p className="payment-intro">Quét mã QR bằng ứng dụng ngân hàng và giữ nguyên nội dung chuyển khoản để hệ thống đối soát chính xác.</p>
+              <div className="payment-amount">
+                <span>Số tiền cần thanh toán</span>
+                <strong>{formatVnd(payment.amount)}</strong>
+              </div>
+              <div className="payment-qr-wrap">
+                <img src={payment.qrUrl} alt="Mã QR thanh toán VietQR" />
+              </div>
+              <div className="payment-details">
+                <div><span>Ngân hàng</span><strong>{payment.bankCode}</strong></div>
+                <div><span>Số tài khoản</span><strong>{payment.accountNumber}</strong></div>
+                <div><span>Chủ tài khoản</span><strong>{payment.accountName}</strong></div>
+                <div className="payment-code-row"><span>Nội dung chuyển khoản</span><strong>{payment.orderCode}</strong><button type="button" onClick={copyOrderCode}>{copied ? 'Đã sao chép' : 'Sao chép'}</button></div>
+              </div>
+              <output className={`form-status payment-status ${paymentStatus === 'paid' ? 'is-paid' : ''}`}>
+                {paymentStatus === 'paid' ? 'Đã nhận thanh toán. Mình sẽ liên hệ với bạn theo thông tin đã đăng ký.' : paymentStatus === 'underpaid' ? 'SePay đã ghi nhận giao dịch nhưng số tiền chưa đủ. Vui lòng liên hệ để được hỗ trợ.' : 'Đang chờ SePay xác nhận giao dịch. Bạn có thể giữ nguyên trang này hoặc đóng lại; hệ thống vẫn tiếp tục đối soát.'}
+              </output>
+              <button type="button" className="payment-reset" onClick={() => { setPayment(null); setPaymentStatus('pending'); }}>Quay lại form đăng ký</button>
+            </div>
+          ) : (
+            <form className="lead-form" onSubmit={handleSubmit}>
+              <label>Họ và tên<input name="name" required placeholder="Tên của bạn" /></label>
+              <label>Email<input name="email" type="email" required placeholder="you@example.com" /></label>
+              <label>Tình huống giao tiếp bạn muốn cải thiện<textarea name="situation" required placeholder="Ví dụ: trình bày một ý tưởng trong cuộc họp..." /></label>
+              <button className="form-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Đang tạo thông tin thanh toán…' : 'Đặt lịch 30 phút'} {!isSubmitting && <span aria-hidden="true">↗</span>}</button>
+              {formError && <output className="form-status form-error">{formError}</output>}
+            </form>
+          )}
         </div>
       </section>
 

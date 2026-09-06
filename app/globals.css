@@ -106,6 +106,25 @@ details p { max-width: 660px; margin: -4px 0 20px; font-size: 15px; line-height:
 .lead-form textarea { min-height: 124px; resize: vertical; }
 .lead-form input:focus, .lead-form textarea:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(36,91,97,.15); }
 .form-status { margin: 0; color: var(--teal); font-size: 13px; line-height: 1.5; }
+.form-button:disabled { cursor: wait; opacity: .72; transform: none; }
+.form-error { color: #b44e38; }
+.payment-panel { display: grid; gap: 18px; padding: 30px; border-radius: 24px; background: var(--white); color: var(--ink); }
+.payment-kicker { margin: 0; color: var(--terracotta); font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.payment-panel h3 { color: var(--teal); font-size: 30px; letter-spacing: -.04em; }
+.payment-intro { margin: 0; font-size: 14px; line-height: 1.6; }
+.payment-amount { display: grid; gap: 4px; padding: 16px; border-radius: 14px; background: var(--mist); }
+.payment-amount span, .payment-details span { color: rgba(38,50,56,.68); font-size: 12px; }
+.payment-amount strong { color: var(--teal); font-family: 'Be Vietnam Pro', sans-serif; font-size: 28px; letter-spacing: -.03em; }
+.payment-qr-wrap { display: grid; place-items: center; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--cream); }
+.payment-qr-wrap img { display: block; width: min(100%, 270px); height: auto; }
+.payment-details { display: grid; gap: 10px; }
+.payment-details > div { display: grid; grid-template-columns: minmax(100px, .7fr) 1fr; gap: 12px; align-items: center; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.payment-details strong { overflow-wrap: anywhere; color: var(--teal); font-size: 14px; }
+.payment-code-row { grid-template-columns: minmax(100px, .7fr) 1fr auto !important; }
+.payment-code-row button, .payment-reset { border: 0; background: none; color: var(--terracotta); cursor: pointer; font-size: 12px; font-weight: 800; }
+.payment-status { padding: 12px 14px; border-radius: 10px; background: var(--cream); }
+.payment-status.is-paid { background: var(--mist); }
+.payment-reset { justify-self: start; padding: 0; }
 .site-footer { background: var(--teal-deep); color: var(--white); }
 .footer-inner { display: flex; justify-content: space-between; gap: 48px; padding-top: 38px; padding-bottom: 38px; }
 .footer-brand, .footer-links { display: grid; gap: 7px; }
@@ -143,12 +162,14 @@ details p { max-width: 660px; margin: -4px 0 20px; font-size: 15px; line-height:
   .mechanism-item:not(:last-child)::after { content: '↓'; top: auto; right: auto; bottom: -4px; left: 13px; font-size: 20px; }
   .mechanism-close { margin-top: 22px; font-size: 17px; }
   .offer-section { gap: 24px; }
-  .offer-card, .lead-form { padding: 24px; border-radius: 20px; }
+  .offer-card, .lead-form, .payment-panel { padding: 24px; border-radius: 20px; }
   .offer-price { font-size: 40px; }
   .proof-image-wrap img { width: 100%; }
   .faq-section { gap: 28px; }
   summary { min-height: 76px; font-size: 15px; }
   .booking-inner { padding-top: 72px; padding-bottom: 78px; }
+  .payment-details > div { grid-template-columns: 1fr; gap: 4px; }
+  .payment-code-row { grid-template-columns: 1fr !important; }
   .footer-inner { display: grid; gap: 24px; padding-top: 30px; padding-bottom: 88px; }
   .footer-links { text-align: left; }
   .mobile-sticky-cta { position: fixed; z-index: 20; right: 0; bottom: 0; left: 0; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 58px; background: var(--terracotta); color: var(--white); font-size: 15px; font-weight: 700; }

@@ -195,7 +195,7 @@ export default function Home() {
         </div>
         <div className="offer-card">
           <p className="offer-kicker">Lộ trình coaching 1-1 trong 3 tháng</p>
-          <p className="offer-price">xx.000.000 <span>VNĐ / 3 tháng</span></p>
+          <p className="offer-price">25.000.000 <span>VNĐ / 3 tháng</span></p>
           <ul className="offer-list">
             <li>Mỗi tuần một buổi 60 phút.</li>
             <li>Tập trung vào một chuyển biến cụ thể trong giao tiếp công việc.</li>

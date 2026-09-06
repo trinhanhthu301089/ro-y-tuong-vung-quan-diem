@@ -6,7 +6,7 @@ import {
   json,
   requireConfig,
   supabaseRequest,
-} from './_lib';
+} from './_lib.js';
 
 export default {
   async fetch(request: Request) {

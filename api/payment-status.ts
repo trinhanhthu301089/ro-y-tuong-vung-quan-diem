@@ -1,4 +1,4 @@
-import { json, normalizeOrderCode, requireConfig, supabaseRequest } from './_lib';
+import { json, normalizeOrderCode, requireConfig, supabaseRequest } from './_lib.js';
 
 export default {
   async fetch(request: Request) {

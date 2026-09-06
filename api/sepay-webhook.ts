@@ -6,7 +6,7 @@ import {
   sendPaymentEmail,
   supabaseRequest,
   type LeadRecord,
-} from './_lib';
+} from './_lib.js';
 
 function isAuthorized(request: Request) {
   const expected = env('SEPAY_WEBHOOK_API_KEY');

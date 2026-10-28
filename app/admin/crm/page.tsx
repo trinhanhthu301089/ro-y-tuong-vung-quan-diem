@@ -45,6 +45,7 @@ export default function CrmPage() {
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [challenge, setChallenge] = useState(() => typeof window === 'undefined' ? '' : window.sessionStorage.getItem('crm_otp_challenge') || '');
+  const [authMode, setAuthMode] = useState<'code' | 'magic_link'>('code');
   const [otpSent, setOtpSent] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -58,14 +59,24 @@ export default function CrmPage() {
   const [draggedId, setDraggedId] = useState('');
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const accessToken = hash.get('access_token');
+    if (!accessToken) return;
+    window.sessionStorage.setItem('crm_access_token', accessToken);
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+    setToken(accessToken);
+  }, []);
+
   async function authRequest(action: 'request_otp' | 'verify_otp') {
     setError('');
     setMessage('');
     const response = await fetch('/api/admin-auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, email, token: otp, challenge }) });
-    const data = await response.json() as { error?: string; ok?: boolean; accessToken?: string; challenge?: string };
+    const data = await response.json() as { error?: string; ok?: boolean; accessToken?: string; challenge?: string; mode?: 'code' | 'magic_link' };
     if (!response.ok) throw new Error(data.error || 'Không thể đăng nhập.');
     if (action === 'request_otp') {
       setOtpSent(true);
+      setAuthMode(data.mode || 'code');
       if (data.challenge) {
         setChallenge(data.challenge);
         window.sessionStorage.setItem('crm_otp_challenge', data.challenge);
@@ -147,10 +158,10 @@ export default function CrmPage() {
           <p className="crm-eyebrow">Coach Anh Thư · Lead Hub</p>
           <h1>Đăng nhập CRM</h1>
           <p>Nhập email quản trị. Mình sẽ gửi một mã xác nhận 6 chữ số để mở Pipeline.</p>
-          <form onSubmit={(event) => { event.preventDefault(); authRequest(otpSent ? 'verify_otp' : 'request_otp').catch((reason) => setError(reason instanceof Error ? reason.message : 'Không thể đăng nhập.')); }}>
+          <form onSubmit={(event) => { event.preventDefault(); const action = otpSent && authMode === 'code' ? 'verify_otp' : 'request_otp'; authRequest(action).catch((reason) => setError(reason instanceof Error ? reason.message : 'Không thể đăng nhập.')); }}>
             <label>Email quản trị<input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required placeholder="you@example.com" /></label>
-            {otpSent && <label>Mã xác nhận<input value={otp} onChange={(event) => setOtp(event.target.value)} inputMode="numeric" maxLength={6} required placeholder="123456" /></label>}
-            <button className="crm-primary-button" type="submit">{otpSent ? 'Xác nhận mã' : 'Gửi mã đăng nhập'}</button>
+            {otpSent && authMode === 'code' && <label>Mã xác nhận<input value={otp} onChange={(event) => setOtp(event.target.value)} inputMode="numeric" maxLength={6} required placeholder="123456" /></label>}
+            <button className="crm-primary-button" type="submit">{otpSent ? (authMode === 'code' ? 'Xác nhận mã' : 'Gửi lại email') : 'Gửi mã đăng nhập'}</button>
           </form>
           {message && <p className="crm-success">{message}</p>}
           {error && <p className="crm-error">{error}</p>}

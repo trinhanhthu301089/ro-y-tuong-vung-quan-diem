@@ -1,7 +1,17 @@
 import { createCrmOtpChallenge, createCrmSession, env, escapeHtml, json, requireConfig, verifyCrmOtpChallenge } from './_lib.js';
 
 function authConfig() {
-  return requireConfig(['SUPABASE_SERVICE_ROLE_KEY', 'RESEND_API_KEY', 'EMAIL_FROM']);
+  return requireConfig(['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'RESEND_API_KEY', 'EMAIL_FROM']);
+}
+
+async function supabaseAuth(path: string, body: Record<string, unknown>) {
+  const baseUrl = env('SUPABASE_URL').replace(/\/$/, '');
+  const key = env('SUPABASE_SERVICE_ROLE_KEY');
+  return fetch(`${baseUrl}/auth/v1/${path}`, {
+    method: 'POST',
+    headers: { apikey: key, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 }
 
 async function sendCrmOtp(email: string, code: string) {
@@ -43,9 +53,12 @@ export default {
         await sendCrmOtp(email, code);
       } catch (error) {
         console.error('crm otp email error', error);
-        return json({ error: 'Không thể gửi email mã đăng nhập. Vui lòng thử lại sau.' }, 502);
+        const redirectTo = 'https://ro-y-tuong-vung-quan-diem.vercel.app/admin/crm';
+        const response = await supabaseAuth(`otp?redirect_to=${encodeURIComponent(redirectTo)}`, { email, create_user: true });
+        if (response.ok) return json({ ok: true, mode: 'magic_link' });
+        return json({ error: 'Không thể gửi email đăng nhập. Vui lòng thử lại sau.' }, 502);
       }
-      return json({ ok: true, challenge });
+      return json({ ok: true, mode: 'code', challenge });
     }
 
     if (action === 'verify_otp') {

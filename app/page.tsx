@@ -65,6 +65,9 @@ export default function Home() {
 
     const form = event.currentTarget;
     const formData = new FormData(form);
+    const params = new URLSearchParams(window.location.search);
+    const utm = Object.fromEntries(['source', 'medium', 'campaign', 'term', 'content'].map((key) => [`${key === 'source' ? 'source' : `utm_${key}`}`, params.get(`utm_${key}`) || '']));
+    const inferredSource = params.get('utm_source') || (document.referrer.includes('facebook.com') ? 'facebook' : 'landing_page');
 
     try {
       const response = await fetch('/api/create-payment', {
@@ -73,10 +76,14 @@ export default function Home() {
         body: JSON.stringify({
           name: formData.get('name'),
           email: formData.get('email'),
+          phone: formData.get('phone'),
           situation: formData.get('situation'),
+          source: inferredSource,
+          landingPageUrl: window.location.href.split('?')[0],
+          utm,
         }),
       });
-      const data = await response.json();
+      const data = await response.json() as PaymentState & { error?: string };
       if (!response.ok) throw new Error(data.error || 'Không thể tạo thanh toán.');
       setPayment(data as PaymentState);
       setPaymentStatus('pending');
@@ -287,6 +294,7 @@ export default function Home() {
             <form className="lead-form" onSubmit={handleSubmit}>
               <label>Họ và tên<input name="name" required placeholder="Tên của bạn" /></label>
               <label>Email<input name="email" type="email" required placeholder="you@example.com" /></label>
+              <label>Số điện thoại <span className="optional-label">(không bắt buộc)</span><input name="phone" type="tel" placeholder="09xx xxx xxx" /></label>
               <label>Tình huống giao tiếp bạn muốn cải thiện<textarea name="situation" required placeholder="Ví dụ: trình bày một ý tưởng trong cuộc họp..." /></label>
               <button className="form-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Đang tạo thông tin thanh toán…' : 'Đặt lịch 30 phút'} {!isSubmitting && <span aria-hidden="true">↗</span>}</button>
               {formError && <output className="form-status form-error">{formError}</output>}

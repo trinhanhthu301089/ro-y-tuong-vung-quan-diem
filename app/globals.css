@@ -134,6 +134,61 @@ details p { max-width: 660px; margin: -4px 0 20px; font-size: 15px; line-height:
 .footer-links { align-content: start; color: rgba(255,255,255,.82); text-align: right; }
 .mobile-sticky-cta { display: none; }
 
+.optional-label { color: rgba(38,50,56,.58); font-size: 12px; font-weight: 500; }
+
+.crm-shell { min-height: 100vh; padding: 42px clamp(20px, 4vw, 64px); background: #f7f3ee; color: var(--ink); }
+.crm-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; max-width: 1600px; margin: 0 auto 28px; }
+.crm-header h1, .crm-auth-card h1 { font-size: clamp(38px, 5vw, 64px); }
+.crm-eyebrow { margin: 0 0 8px; color: var(--terracotta); font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.crm-header-actions { display: flex; align-items: center; gap: 14px; font-size: 13px; font-weight: 700; }
+.crm-header-actions a { color: var(--teal); }
+.crm-header-actions button, .crm-modal-close { border: 0; background: transparent; color: var(--terracotta); cursor: pointer; font-weight: 700; }
+.crm-toolbar, .crm-add-form { display: flex; flex-wrap: wrap; gap: 10px; max-width: 1600px; margin: 0 auto 20px; }
+.crm-toolbar input, .crm-toolbar select, .crm-add-form input, .crm-modal input, .crm-modal select, .crm-modal textarea, .crm-auth-card input { min-height: 44px; border: 1px solid rgba(38,50,56,.16); border-radius: 10px; background: #fff; color: var(--ink); padding: 10px 12px; outline: none; }
+.crm-toolbar input { flex: 1 1 260px; }
+.crm-toolbar select, .crm-add-form input { flex: 0 1 180px; }
+.crm-add-form { padding: 16px; border-radius: 14px; background: var(--mist); }
+.crm-primary-button { min-height: 44px; border: 0; border-radius: 10px; background: var(--teal); color: #fff; padding: 0 16px; cursor: pointer; font-weight: 700; }
+.crm-primary-button:hover { background: var(--teal-deep); }
+.crm-inline-message { max-width: 1600px; margin: 0 auto 16px; }
+.crm-board { display: grid; grid-template-columns: repeat(6, minmax(210px, 1fr)); gap: 12px; max-width: 1600px; margin: 0 auto; overflow-x: auto; align-items: start; }
+.crm-column { min-height: 420px; padding: 12px; border: 1px solid rgba(36,91,97,.12); border-radius: 16px; background: rgba(217,234,234,.55); }
+.crm-column-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.crm-column-heading h2 { font-size: 16px; letter-spacing: -.02em; }
+.crm-column-heading span { display: grid; width: 26px; height: 26px; place-items: center; border-radius: 999px; background: var(--white); color: var(--teal); font-size: 12px; font-weight: 800; }
+.crm-column-cards { display: grid; gap: 10px; }
+.crm-lead-card { padding: 14px; border: 1px solid rgba(38,50,56,.1); border-radius: 12px; background: #fff; cursor: grab; box-shadow: 0 4px 14px rgba(38,50,56,.04); }
+.crm-lead-card:active { cursor: grabbing; }
+.crm-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.crm-card-top strong { color: var(--teal); font-family: 'Be Vietnam Pro', sans-serif; font-size: 15px; }
+.crm-score { flex: 0 0 auto; color: var(--terracotta); font-size: 12px; font-weight: 800; }
+.crm-source { display: inline-block; margin-top: 7px; color: rgba(38,50,56,.58); font-size: 11px; font-weight: 700; text-transform: uppercase; }
+.crm-lead-card p { margin: 10px 0 8px; font-size: 13px; line-height: 1.45; }
+.crm-lead-card small { display: block; color: rgba(38,50,56,.58); font-size: 11px; line-height: 1.4; }
+.crm-auth-shell { display: grid; min-height: 100vh; place-items: center; padding: 20px; background: var(--cream); }
+.crm-auth-card { width: min(100%, 440px); padding: 34px; border-radius: 22px; background: #fff; box-shadow: 0 18px 60px rgba(38,50,56,.1); }
+.crm-auth-card > p:not(.crm-eyebrow) { margin: 18px 0 24px; font-size: 15px; line-height: 1.6; }
+.crm-auth-card form { display: grid; gap: 16px; }
+.crm-auth-card label, .crm-modal label { display: grid; gap: 7px; color: var(--teal); font-size: 12px; font-weight: 800; }
+.crm-auth-card input { width: 100%; }
+.crm-success, .crm-error { font-size: 13px; line-height: 1.5; }
+.crm-success { color: #26705f; }
+.crm-error { color: #b44e38; }
+.crm-back-link { display: inline-block; margin-top: 22px; color: var(--teal); font-size: 13px; font-weight: 700; }
+.crm-modal-backdrop { position: fixed; z-index: 40; inset: 0; display: grid; justify-items: end; background: rgba(23,63,68,.35); }
+.crm-modal { position: relative; width: min(100%, 480px); height: 100%; overflow-y: auto; padding: 42px 30px; background: #fff; box-shadow: -12px 0 40px rgba(38,50,56,.14); }
+.crm-modal-close { position: absolute; top: 18px; right: 20px; font-size: 26px; font-weight: 400; }
+.crm-modal h2 { font-size: 32px; }
+.crm-modal > p:not(.crm-eyebrow):not(.crm-score-reason):not(.crm-detail-label) { margin: 8px 0 18px; font-size: 14px; }
+.crm-score-breakdown { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; align-items: center; margin: 18px 0 10px; }
+.crm-score-breakdown strong { color: var(--terracotta); font-family: 'Be Vietnam Pro', sans-serif; font-size: 24px; }
+.crm-score-breakdown span { padding: 7px; border-radius: 8px; background: var(--mist); color: var(--teal); font-size: 11px; text-align: center; }
+.crm-score-reason { padding: 12px; border-radius: 10px; background: var(--cream); font-size: 13px; line-height: 1.5; }
+.crm-detail-label { margin: 22px 0 4px; color: var(--terracotta); font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.crm-modal label { margin-top: 18px; }
+.crm-modal select, .crm-modal input, .crm-modal textarea { width: 100%; }
+.crm-modal textarea { min-height: 100px; resize: vertical; }
+
 @media (max-width: 900px) {
   .hero { grid-template-columns: 1fr; gap: 32px; padding-top: 128px; }
   .hero-copy { max-width: 700px; }
@@ -141,6 +196,7 @@ details p { max-width: 660px; margin: -4px 0 20px; font-size: 15px; line-height:
   .issue-grid, .outcome-grid { grid-template-columns: repeat(2, 1fr); }
   .offer-section, .proof-section, .faq-section, .booking-inner { grid-template-columns: 1fr; gap: 42px; }
   .proof-image-wrap { max-width: 420px; }
+  .crm-board { grid-template-columns: repeat(3, minmax(220px, 1fr)); }
 }
 
 @media (max-width: 620px) {
@@ -173,4 +229,15 @@ details p { max-width: 660px; margin: -4px 0 20px; font-size: 15px; line-height:
   .footer-inner { display: grid; gap: 24px; padding-top: 30px; padding-bottom: 88px; }
   .footer-links { text-align: left; }
   .mobile-sticky-cta { position: fixed; z-index: 20; right: 0; bottom: 0; left: 0; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 58px; background: var(--terracotta); color: var(--white); font-size: 15px; font-weight: 700; }
+  .crm-shell { padding: 24px 14px 40px; }
+  .crm-header { align-items: flex-start; flex-direction: column; }
+  .crm-header-actions { width: 100%; justify-content: space-between; }
+  .crm-board { grid-template-columns: repeat(6, minmax(240px, 1fr)); margin-right: -14px; padding-right: 14px; }
+  .crm-toolbar { display: grid; grid-template-columns: 1fr 1fr; }
+  .crm-toolbar input, .crm-toolbar select, .crm-toolbar .crm-primary-button { min-width: 0; width: 100%; }
+  .crm-toolbar input { grid-column: 1 / -1; }
+  .crm-toolbar .crm-primary-button { grid-column: 1 / -1; }
+  .crm-add-form { display: grid; }
+  .crm-add-form input, .crm-add-form button { width: 100%; }
+  .crm-modal { width: 100%; }
 }

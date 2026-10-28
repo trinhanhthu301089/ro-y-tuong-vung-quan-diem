@@ -4,6 +4,23 @@ export type LeadRecord = {
   name: string;
   email: string;
   situation: string;
+  phone?: string | null;
+  source?: string | null;
+  landing_page_url?: string | null;
+  utm_source?: string | null;
+  utm_medium?: string | null;
+  utm_campaign?: string | null;
+  utm_term?: string | null;
+  utm_content?: string | null;
+  pipeline_stage?: PipelineStage;
+  score_fit?: number;
+  score_intent?: number;
+  score_engagement?: number;
+  score_total?: number;
+  score_reason?: string | null;
+  next_action?: string | null;
+  last_interaction_at?: string | null;
+  last_interaction_type?: string | null;
   amount: number;
   status: 'pending' | 'paid' | 'underpaid' | 'expired' | 'cancelled';
   sepay_transaction_id?: number | null;
@@ -15,6 +32,17 @@ export type LeadRecord = {
   paid_at?: string | null;
   payment_notification_sent_at?: string | null;
 };
+
+export type PipelineStage = 'new' | 'contacted' | 'qualified' | 'booked' | 'won' | 'not_fit';
+
+export const PIPELINE_STAGES: Array<{ key: PipelineStage; label: string }> = [
+  { key: 'new', label: 'Mới' },
+  { key: 'contacted', label: 'Đã liên hệ' },
+  { key: 'qualified', label: 'Đủ điều kiện' },
+  { key: 'booked', label: 'Đặt lịch' },
+  { key: 'won', label: 'Đã mua' },
+  { key: 'not_fit', label: 'Chưa phù hợp' },
+];
 
 export function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -28,6 +56,39 @@ export function json(data: unknown, status = 200) {
 
 export function env(name: string) {
   return process.env[name]?.trim() || '';
+}
+
+export function normalizePhone(value: unknown) {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  const normalized = trimmed.replace(/[^\d+]/g, '');
+  return normalized.startsWith('00') ? `+${normalized.slice(2)}` : normalized;
+}
+
+export function normalizeEmail(value: unknown) {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+export function calculateLeadScore(input: {
+  email?: string | null;
+  phone?: string | null;
+  situation?: string | null;
+  source?: string | null;
+  utmSource?: string | null;
+  activityCount?: number;
+}) {
+  const situation = String(input.situation || '').trim();
+  const fit = situation.length >= 80 ? 30 : situation.length >= 30 ? 20 : situation.length ? 10 : 0;
+  const intent = situation.length >= 30 ? 20 : situation.length ? 10 : 0;
+  const engagement = Math.min(50, (input.email ? 10 : 0) + (input.phone ? 15 : 0) + (input.utmSource || input.source ? 10 : 0) + Math.min(15, (input.activityCount || 0) * 5));
+  const total = Math.max(0, Math.min(100, fit + intent + engagement));
+  const reasons = [
+    fit ? `Nhu cầu đã được mô tả ${situation.length >= 80 ? 'khá cụ thể' : 'ở mức cơ bản'}.` : 'Chưa có đủ dữ liệu để đánh giá độ phù hợp.',
+    intent ? 'Có tín hiệu chủ động từ việc gửi tình huống cần cải thiện.' : 'Chưa có dữ liệu về ý định.',
+    engagement ? 'Điểm tương tác dựa trên thông tin liên hệ, nguồn và lịch sử hoạt động đã có.' : 'Chưa có dữ liệu tương tác.',
+  ];
+  return { fit, intent, engagement, total, reason: reasons.join(' ') };
 }
 
 export function requireConfig(names: string[]) {

@@ -8,6 +8,7 @@ import {
   PIPELINE_STAGES,
   supabaseRequest,
   type PipelineStage,
+  verifyCrmSession,
 } from './_lib.js';
 
 const leadSelect = 'id,order_code,name,email,phone,situation,source,landing_page_url,utm_source,utm_medium,utm_campaign,utm_term,utm_content,amount,status,pipeline_stage,score_fit,score_intent,score_engagement,score_total,score_reason,next_action,last_interaction_at,last_interaction_type,created_at,updated_at,paid_amount,paid_at';
@@ -16,12 +17,14 @@ async function requireAdmin(request: Request) {
   const auth = request.headers.get('authorization') || '';
   const token = auth.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
   if (!token) return null;
+  const adminEmail = (env('CRM_ADMIN_EMAIL') || env('ADMIN_EMAIL')).toLowerCase();
+  const crmSession = await verifyCrmSession(token);
+  if (crmSession?.email?.toLowerCase() === adminEmail) return { email: adminEmail };
   const baseUrl = env('SUPABASE_URL').replace(/\/$/, '');
   const serviceKey = env('SUPABASE_SERVICE_ROLE_KEY');
   const response = await fetch(`${baseUrl}/auth/v1/user`, { headers: { apikey: serviceKey, Authorization: `Bearer ${token}` } });
   if (!response.ok) return null;
   const user = await response.json() as { id?: string; email?: string };
-  const adminEmail = (env('CRM_ADMIN_EMAIL') || env('ADMIN_EMAIL')).toLowerCase();
   return user.email?.toLowerCase() === adminEmail ? user : null;
 }
 

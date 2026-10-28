@@ -58,6 +58,60 @@ export function env(name: string) {
   return process.env[name]?.trim() || '';
 }
 
+function base64UrlEncode(value: string | Uint8Array) {
+  const bytes = typeof value === 'string' ? new TextEncoder().encode(value) : value;
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
+}
+
+function base64UrlDecode(value: string) {
+  const padded = value.replaceAll('-', '+').replaceAll('_', '/') + '='.repeat((4 - (value.length % 4)) % 4);
+  const binary = atob(padded);
+  return new TextDecoder().decode(Uint8Array.from(binary, (character) => character.charCodeAt(0)));
+}
+
+async function hmac(value: string) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(env('SUPABASE_SERVICE_ROLE_KEY')), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return base64UrlEncode(new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(value))));
+}
+
+async function signAuthPayload(payload: Record<string, unknown>) {
+  const encoded = base64UrlEncode(JSON.stringify(payload));
+  return `${encoded}.${await hmac(encoded)}`;
+}
+
+async function verifyAuthPayload<T extends Record<string, unknown>>(token: string, type: string) {
+  const [encoded, signature] = token.split('.');
+  if (!encoded || !signature || signature !== await hmac(encoded)) return null;
+  try {
+    const payload = JSON.parse(base64UrlDecode(encoded)) as T;
+    if (payload.type !== type || typeof payload.exp !== 'number' || payload.exp < Math.floor(Date.now() / 1000)) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+export async function createCrmOtpChallenge(email: string, code: string) {
+  const codeHash = await hmac(`${email}:${code}`);
+  return signAuthPayload({ type: 'crm_otp_challenge', email, codeHash, exp: Math.floor(Date.now() / 1000) + 10 * 60 });
+}
+
+export async function verifyCrmOtpChallenge(challenge: string, email: string, code: string) {
+  const payload = await verifyAuthPayload<{ type: string; email?: string; codeHash?: string; exp: number }>(challenge, 'crm_otp_challenge');
+  if (!payload || payload.email !== email || payload.codeHash !== await hmac(`${email}:${code}`)) return false;
+  return true;
+}
+
+export async function createCrmSession(email: string) {
+  return signAuthPayload({ type: 'crm_session', email, exp: Math.floor(Date.now() / 1000) + 60 * 60 });
+}
+
+export async function verifyCrmSession(token: string) {
+  return verifyAuthPayload<{ type: string; email?: string; exp: number }>(token, 'crm_session');
+}
+
 export function normalizePhone(value: unknown) {
   if (typeof value !== 'string') return '';
   const trimmed = value.trim();

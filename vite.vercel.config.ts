@@ -7,7 +7,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   // Vercel needs the Vinext server plus Nitro output so App Router pages
   // and API handlers are deployed instead of only the landing page shell.
-  plugins: [vinext(), nitro()],
+  plugins: [vinext(), nitro({ renderer: false })],
   resolve: {
     alias: {
       'next/image': fileURLToPath(new URL('./src/next-image.tsx', import.meta.url)),

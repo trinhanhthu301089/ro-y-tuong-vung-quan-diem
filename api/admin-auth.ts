@@ -1,23 +1,28 @@
-import { env, json, requireConfig } from './_lib.js';
+import { createCrmOtpChallenge, createCrmSession, env, escapeHtml, json, requireConfig, verifyCrmOtpChallenge } from './_lib.js';
 
 function authConfig() {
-  return requireConfig(['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY']);
+  return requireConfig(['SUPABASE_SERVICE_ROLE_KEY', 'RESEND_API_KEY', 'EMAIL_FROM']);
 }
 
-async function supabaseAuth(path: string, body: Record<string, unknown>) {
-  const baseUrl = env('SUPABASE_URL').replace(/\/$/, '');
-  const key = env('SUPABASE_SERVICE_ROLE_KEY');
-  return fetch(`${baseUrl}/auth/v1/${path}`, {
+async function sendCrmOtp(email: string, code: string) {
+  const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
-    headers: { apikey: key, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    headers: { Authorization: `Bearer ${env('RESEND_API_KEY')}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: env('EMAIL_FROM'),
+      to: [email],
+      subject: `${code} là mã đăng nhập CRM của bạn`,
+      text: `Mã đăng nhập CRM của bạn là ${code}. Mã có hiệu lực trong 10 phút. Nếu bạn không yêu cầu mã này, hãy bỏ qua email.`,
+      html: `<div style="font-family:Arial,sans-serif;line-height:1.6"><h2>Mã đăng nhập CRM</h2><p>Sử dụng mã dưới đây để mở Lead Hub:</p><p style="font-size:32px;letter-spacing:8px;font-weight:700;color:#245B61">${escapeHtml(code)}</p><p>Mã có hiệu lực trong 10 phút.</p><p>Nếu bạn không yêu cầu mã này, hãy bỏ qua email.</p></div>`,
+    }),
   });
+  if (!response.ok) throw new Error(`Resend request failed (${response.status}): ${await response.text()}`);
 }
 
 export default {
   async fetch(request: Request) {
     if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
-    if (authConfig().length) return json({ error: 'CRM auth is not configured yet.' }, 503);
+    if (authConfig().length || !env('ADMIN_EMAIL')) return json({ error: 'CRM auth is not configured yet.' }, 503);
 
     let body: Record<string, unknown>;
     try {
@@ -32,19 +37,23 @@ export default {
     if (!email || email !== adminEmail) return json({ error: 'Email này không có quyền truy cập CRM.' }, 403);
 
     if (action === 'request_otp') {
-      const response = await supabaseAuth('otp', { email, create_user: true });
-      if (!response.ok) return json({ error: 'Không thể gửi mã đăng nhập. Vui lòng thử lại sau.' }, 400);
-      return json({ ok: true });
+      const code = String(100000 + (crypto.getRandomValues(new Uint32Array(1))[0] % 900000));
+      const challenge = await createCrmOtpChallenge(email, code);
+      try {
+        await sendCrmOtp(email, code);
+      } catch (error) {
+        console.error('crm otp email error', error);
+        return json({ error: 'Không thể gửi email mã đăng nhập. Vui lòng thử lại sau.' }, 502);
+      }
+      return json({ ok: true, challenge });
     }
 
     if (action === 'verify_otp') {
       const token = typeof body.token === 'string' ? body.token.trim() : '';
+      const challenge = typeof body.challenge === 'string' ? body.challenge.trim() : '';
       if (!/^\d{6}$/.test(token)) return json({ error: 'Mã xác nhận gồm 6 chữ số.' }, 400);
-      const response = await supabaseAuth('verify', { email, token, type: 'email' });
-      if (!response.ok) return json({ error: 'Mã xác nhận không đúng hoặc đã hết hạn.' }, 400);
-      const data = await response.json() as { access_token?: string; refresh_token?: string; expires_in?: number; user?: { email?: string } };
-      if (!data.access_token || data.user?.email?.toLowerCase() !== adminEmail) return json({ error: 'Không thể xác nhận quyền quản trị.' }, 403);
-      return json({ accessToken: data.access_token, refreshToken: data.refresh_token, expiresIn: data.expires_in });
+      if (!challenge || !await verifyCrmOtpChallenge(challenge, email, token)) return json({ error: 'Mã xác nhận không đúng hoặc đã hết hạn.' }, 400);
+      return json({ accessToken: await createCrmSession(adminEmail), expiresIn: 3600 });
     }
 
     return json({ error: 'Invalid auth action.' }, 400);

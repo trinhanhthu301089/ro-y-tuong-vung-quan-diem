@@ -44,6 +44,7 @@ export default function CrmPage() {
   const [token, setToken] = useState(readSession);
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
+  const [challenge, setChallenge] = useState(() => typeof window === 'undefined' ? '' : window.sessionStorage.getItem('crm_otp_challenge') || '');
   const [otpSent, setOtpSent] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -60,14 +61,19 @@ export default function CrmPage() {
   async function authRequest(action: 'request_otp' | 'verify_otp') {
     setError('');
     setMessage('');
-    const response = await fetch('/api/admin-auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, email, token: otp }) });
-    const data = await response.json() as { error?: string; ok?: boolean; accessToken?: string };
+    const response = await fetch('/api/admin-auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, email, token: otp, challenge }) });
+    const data = await response.json() as { error?: string; ok?: boolean; accessToken?: string; challenge?: string };
     if (!response.ok) throw new Error(data.error || 'Không thể đăng nhập.');
     if (action === 'request_otp') {
       setOtpSent(true);
+      if (data.challenge) {
+        setChallenge(data.challenge);
+        window.sessionStorage.setItem('crm_otp_challenge', data.challenge);
+      }
       setMessage('Mã 6 chữ số đã được gửi tới email quản trị.');
     } else if (data.accessToken) {
       window.sessionStorage.setItem('crm_access_token', data.accessToken);
+      window.sessionStorage.removeItem('crm_otp_challenge');
       setToken(data.accessToken);
       setMessage('Đăng nhập thành công.');
     }

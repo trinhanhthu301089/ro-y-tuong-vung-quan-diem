@@ -55,6 +55,33 @@ export default {
     const orderCode = createOrderCode();
     const score = calculateLeadScore({ email, phone, situation, source, utmSource: typeof utm.source === 'string' ? utm.source : '', activityCount: 1 });
 
+    const crmCoreUrl = env('CRM_CORE_URL').replace(/\/$/, '');
+    if (crmCoreUrl) {
+      try {
+        const intakeResponse = await fetch(`${crmCoreUrl}/api/intake-lead`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, phone, situation, source, landingPageUrl, utm }),
+        });
+        const intake = await intakeResponse.json() as { orderCode?: string; amount?: number; error?: string };
+        if (!intakeResponse.ok || !intake.orderCode) {
+          throw new Error(intake.error || 'CRM Core không nhận được lead.');
+        }
+        const coreAmount = Number(intake.amount) || amount;
+        return json({
+          orderCode: intake.orderCode,
+          amount: coreAmount,
+          qrUrl: buildQrUrl(intake.orderCode, coreAmount),
+          accountName: env('BANK_ACCOUNT_NAME'),
+          bankCode: env('BANK_CODE'),
+          accountNumber: env('BANK_ACCOUNT_NUMBER'),
+        });
+      } catch (error) {
+        console.error('CRM Core intake error', error);
+        return json({ error: 'Không thể gửi đăng ký vào CRM lúc này.' }, 502);
+      }
+    }
+
     try {
       const emailLookup = await supabaseRequest(`/rest/v1/leads?email=eq.${encodeURIComponent(email)}&select=id,phone,pipeline_stage,next_action&limit=1`, { method: 'GET' });
       const emailRows = await emailLookup.json() as Array<{ id: string; phone?: string | null; pipeline_stage?: string; next_action?: string | null }>;
